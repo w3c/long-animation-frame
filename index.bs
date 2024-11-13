@@ -470,7 +470,7 @@ Report Long Animation Frames {#loaf-processing-model}
 </div>
 
 <div algorithm="Queue frame timing">
-    To <dfn expotr>queue a long animation frame entry</dfn> given a {{Document}} |document|, a [=frame timing info=] |timingInfo|, and a [=/paint timing info=] |paintTimingInfo|,
+    To <dfn export>queue a long animation frame entry</dfn> given a {{Document}} |document|, a [=frame timing info=] |timingInfo|, and a [=/paint timing info=] |paintTimingInfo|,
         [=queue a PerformanceEntry|queue=] a new {{PerformanceLongAnimationFrameTiming}} in |document|'s [=relevant realm=],
         whose [=PerformanceLongAnimationFrameTiming/timing info=] is |timingInfo| and whose [=PaintTimingMixin/paint timing info=] is |paintTimingInfo|.
 </div>
