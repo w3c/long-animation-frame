@@ -37,6 +37,11 @@ urlPrefix: https://w3c.github.io/hr-time/; spec: HR-TIME-2;
     type: attribute; for: Performance;
         text: now(); url: #dom-performance-now
     type: dfn; text: current high resolution time; url: #dfn-current-high-resolution-time;
+urlPrefix: https://w3c.github.io/paint-timing/; spec: PAINT-TIMING;
+    type: interface; url: #painttimingmixin; text: PaintTimingMixin;
+    type: dfn; url: #paint-timing-info; text: paint timing info;
+    type: dfn; for: PaintTimingMixin; url: #painttimingmixin-paint-timing-info; text: paint timing info;
+    type: dfn; for: paint timing info; text: rendering update end time;
 urlPrefix: https://html.spec.whatwg.org/multipage/; spec: HTML;
     type: dfn; url: #event-loop; text: event loop;
     type: dfn; url: #event-loop-processing-model; text: event loop processing model;
@@ -158,6 +163,8 @@ Long Animation Frame timing involves the following new interfaces:
         [SameObject] readonly attribute FrozenArray&lt;PerformanceScriptTiming&gt; scripts;
         [Default] object toJSON();
     };
+
+    PerformanceLongAnimationFrameTiming includes PaintTimingMixin;
 </pre>
 
 A {{PerformanceLongAnimationFrameTiming}} has a [=frame timing info=] <dfn for=PerformanceLongAnimationFrameTiming>timing info</dfn>.
@@ -382,7 +389,7 @@ It has the following [=struct/items=]:
     :: A {{WeakRef}} to a {{Window}}.
 </dl>
 
-A {{Document}} has a null or [=frame timing info=] <dfn>current frame timing info</dfn>, initially null.
+A {{Document}} has a null or [=frame timing info=] <dfn export>current frame timing info</dfn>, initially null.
 
 
 Report Long Animation Frames {#loaf-processing-model}
@@ -432,12 +439,18 @@ Report Long Animation Frames {#loaf-processing-model}
 
     1. [=list/Append=] the [=duration=] between |safeTaskStartTime| and |safeTaskEndTime| to |timingInfo|'s [=task durations=].
 
-    1. If the user agent believes that updating the rendering of |document|'s [=node navigable=] would have no visible effect, then [=report frame timing=] given |document| and return.
+    1. If the user agent believes that updating the rendering of |document|'s [=node navigable=] would have no visible effect, then:
+        1. set |document|'s [=nearest same-origin root=]'s [=current frame timing info=] to null.
+
+        1. Let |frameDuration| be the [=duration=] between the [=relative high resolution time=] given |timingInfo|'s [=frame timing info/start time=] and |global|,
+            and the [=relative high resolution time=] given |unsafeTaskEndTime| and |global|.
+
+        1. If |frameDuration| is equal or greater than 50 milliseconds, then [=queue a long animation frame entry=] given |document|, |timingInfo|, and a new [/=paint timing info=] whose [=rendering update end time=] is 0.
 
         Note: even though there was no actual visual update, we mark a [=long animation frame=] here because it would be blocking in a scenario where it coincided with an unrelated visual update.
 </div>
 
-<div algorithm="Report rendering time">
+<div algorithm="Record rendering time">
     To <dfn export>record rendering time</dfn> given a {{Document}} |document|, and a {{DOMHighResTimeStamp}} |unsafeStyleAndLayoutStart|:
 
     1. Let |timingInfo| be |document|'s [=relevant frame timing info=].
@@ -446,30 +459,20 @@ Report Long Animation Frames {#loaf-processing-model}
 
         Note: This can occur if the browser becomes hidden during the sequence.
 
+    1. Let |frameDuration| be the [=duration=] between the [=relative high resolution time=] given |timingInfo|'s [=frame timing info/start time=] and |global|,
+        and the [=current high resolution time=] given |global|.
+
+    1. If |frameDuration| is less than 50 milliseconds, then set |document|'s [=nearest same-origin root=]'s [=current frame timing info=] to null and return.
+
     1. Set |timingInfo|'s [=frame timing info/update the rendering start time=] to |timingInfo|'s [=frame timing info/current task start time=].
 
     1. Set |timingInfo|'s [=frame timing info/style and layout start time=] to |unsafeStyleAndLayoutStart|.
-
-    1. [=report frame timing=] given |document| and the [=unsafe shared current time=].
 </div>
 
 <div algorithm="Queue frame timing">
-    To <dfn export>report frame timing</dfn> given a {{Document}} |document| and a {{DOMHighResTimeStamp}} |unsafeEndTime|:
-
-    1. Let |timingInfo| be |document|'s [=relevant frame timing info=].
-
-    1. Assert: |timingInfo| is not null.
-
-    1. Let |global| be |document|'s [=relevant global object=].
-
-    1. Let |frameDuration| be the [=duration=] between the [=relative high resolution time=] given |timingInfo|'s [=frame timing info/start time=] and |global|,
-        and the [=relative high resolution time=] given |unsafeEndTime| and |global|.
-
-    1. If |frameDuration| is greater than 50 milliseconds, then
-        [=queue a PerformanceEntry|Queue=] a new {{PerformanceLongAnimationFrameTiming}} in |document|'s [=relevant realm=],
-        whose [=PerformanceLongAnimationFrameTiming/timing info=] is |timingInfo|.
-
-    1. set |document|'s [=nearest same-origin root=]'s [=current frame timing info=] to null.
+    To <dfn expotr>queue a long animation frame entry</dfn> given a {{Document}} |document|, a [=frame timing info=] |timingInfo|, and a [=/paint timing info=] |paintTimingInfo|,
+        [=queue a PerformanceEntry|queue=] a new {{PerformanceLongAnimationFrameTiming}} in |document|'s [=relevant realm=],
+        whose [=PerformanceLongAnimationFrameTiming/timing info=] is |timingInfo| and whose [=PaintTimingMixin/paint timing info=] is |paintTimingInfo|.
 </div>
 
 ### Long Script Monitoring ### {#long-script-monitoring}
@@ -601,7 +604,7 @@ Report Long Animation Frames {#loaf-processing-model}
 </div>
 
 <div algorithm="Report pause duration">
-    To <dfn>record pause duration</dfn> given a [=duration=] |duration|:
+    To <dfn export>record pause duration</dfn> given a [=duration=] |duration|:
     1. Let |script| be the [=running script=].
     1. Let |settings| be |script|'s [=script/settings object=].
     1. If |settings| is not a {{Window}}, then return.
