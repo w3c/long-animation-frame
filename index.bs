@@ -445,7 +445,7 @@ Report Long Animation Frames {#loaf-processing-model}
         1. Let |frameDuration| be the [=duration=] between the [=relative high resolution time=] given |timingInfo|'s [=frame timing info/start time=] and |global|,
             and the [=relative high resolution time=] given |unsafeTaskEndTime| and |global|.
 
-        1. If |frameDuration| is equal or greater than 50 milliseconds, then [=queue a long animation frame entry=] given |document|, |timingInfo|, and a new [/=paint timing info=] whose [=rendering update end time=] is 0.
+        1. If |frameDuration| is equal or greater than 50 milliseconds, then [=queue a long animation frame entry=] given |document|, |timingInfo|, and a new [/=paint timing info=].
 
         Note: even though there was no actual visual update, we mark a [=long animation frame=] here because it would be blocking in a scenario where it coincided with an unrelated visual update.
 </div>
